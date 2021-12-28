@@ -1,0 +1,4 @@
+Save images with 16 palletes, indexed color, BMP 4-bit, no compress, switch ON flip row order
+
+To generate image:
+  Pico16VGAImg input.bmp output.c name

@@ -1,0 +1,111 @@
+
+; ============================================================================
+;                           VGA PIO (30 instructions)
+; ============================================================================
+; Control word (left shifted):
+;  - bit 0..4 (5 bits) jump address
+;  - bit 5..31 (27 bits) loop counter N
+
+.program vga
+
+; === Uncomment one of the following side_set sections according to the VGA_MODE in config.h
+
+; VGA mode 0: new analog VGA (uses HSYNC as composite sync)
+;.side_set		1		; number of control signals (HSYNC, VSYNC, DCLK and DE output, 4 bits)
+;.define HS		1		; HSYNC output (HSYNC active HIGH; output is inverted)
+;.define VS		0		; VSYNC output (VSYNC active HIGH; output is inverted)
+;.define CL		0		; DCLK data clock 25 MHz output (3 ticks LOW, than 2 ticks HIGH)
+;.define DE		0		; DE data enable output (active HIGH during image data)
+
+; VGA mode 1: old analog VGA (uses HSYNC, VSYNC)
+;.side_set		2		; number of control signals (HSYNC, VSYNC, DCLK and DE output, 4 bits)
+;.define HS		1		; HSYNC output (HSYNC active HIGH; output is inverted)
+;.define VS		2		; VSYNC output (VSYNC active HIGH; output is inverted)
+;.define CL		0		; DCLK data clock 25 MHz output (3 ticks LOW, than 2 ticks HIGH)
+;.define DE		0		; DE data enable output (active HIGH during image data)
+
+; VGA mode 2: universal mode (uses HSYNC, VSYNC, DCLK, DE)
+.side_set		4		; number of control signals (HSYNC, VSYNC, DCLK and DE output, 4 bits)
+.define HS		1		; HSYNC output (HSYNC active HIGH; output is inverted)
+.define VS		2		; VSYNC output (VSYNC active HIGH; output is inverted)
+.define CL		4		; DCLK data clock 25 MHz output (3 ticks LOW, than 2 ticks HIGH)
+.define DE		8		; DE data enable output (active HIGH during image data)
+
+; VGA mode 3: digital parallel VGA in HV mode (uses HSYNC, VSYNC, DCLK)
+;.side_set		3		; number of control signals (HSYNC, VSYNC, DCLK and DE output, 4 bits)
+;.define HS		1		; HSYNC output (HSYNC active HIGH; output is inverted)
+;.define VS		2		; VSYNC output (VSYNC active HIGH; output is inverted)
+;.define CL		4		; DCLK data clock 25 MHz output (3 ticks LOW, than 2 ticks HIGH)
+;.define DE		0		; DE data enable output (active HIGH during image data)
+
+; VGA mode 4: digital parallel VGA in DE mode (uses DCLK, DE)
+;.side_set		2		; number of control signals (HSYNC, VSYNC, DCLK and DE output, 4 bits)
+;.define HS		0		; HSYNC output (HSYNC active HIGH; output is inverted)
+;.define VS		0		; VSYNC output (VSYNC active HIGH; output is inverted)
+;.define CL		1		; DCLK data clock 25 MHz output (3 ticks LOW, than 2 ticks HIGH)
+;.define DE		2		; DE data enable output (active HIGH during image data)
+
+; setup side-set bits
+.define HSYNC		HS		; HSYNC pulse active
+.define HSYNC_CLK	HS+CL		; HSYNC pulse active with DCLK
+.define VSYNC		VS		; VSYNC pulse active
+.define VSYNC_CLK	VS+CL		; VSYNC pulse active with DCLK
+.define VHSYNC		HS+VS		; HSYNC and VSYNC pulses active
+.define VHSYNC_CLK	HS+VS+CL	; HSYNC and VSYNC pulses active with DCLK
+.define BLANK		0		; blanking
+.define BLANK_CLK	CL		; blanking with DCLK
+.define IMG		DE		; image, DE active
+.define IMG_CLK		DE+CL		; image, DE active with DCLK
+
+.define BPP		4		; number of bits per pixel
+
+; ===== [6 instructions] HSYNC pulse, N=delay in pixels - 2
+
+public hsync:
+	nop			side HSYNC		; [1]
+	nop			side HSYNC	[1]	; [2]
+	jmp	x--,hsync	side HSYNC_CLK	[1]	; [2] loop
+public entry: 						; program entry point
+	nop			side HSYNC		; [1]
+	out	x,27		side HSYNC	[1]	; [2] get next loop counter N
+	out	pc,5		side HSYNC_CLK	[1]	; [2] jump to next function
+
+; ===== [6 instructions] VSYNC pulse, N=delay in pixels - 2
+
+public vsync:
+	nop			side VSYNC		; [1]
+	nop			side VSYNC	[1]	; [2]
+	jmp	x--,vsync	side VSYNC_CLK	[1]	; [2] loop
+	nop			side VSYNC		; [1]
+	out	x,27		side VSYNC	[1]	; [2] get next loop counter N
+	out	pc,5		side VSYNC_CLK	[1]	; [2] jump to next function
+
+; ===== [6 instructions] VSYNC and HSYNC pulse, N=delay in pixels - 2
+
+public vhsync:
+	nop			side VHSYNC		; [1]
+	nop			side VHSYNC	[1]	; [2]
+	jmp	x--,vhsync	side VHSYNC_CLK	[1]	; [2] loop
+	nop			side VHSYNC		; [1]
+	out	x,27		side VHSYNC	[1]	; [2] get next loop counter N
+	out	pc,5		side VHSYNC_CLK	[1]	; [2] jump to next function
+
+; ===== [6 instructions] BLANKING pulse, N=delay in pixels - 2
+
+public blank:
+	mov	pins,null	side BLANK		; [1] dark output
+	nop			side BLANK	[1]	; [2]
+	jmp	x--,blank	side BLANK_CLK	[1]	; [2] loop
+	nop			side BLANK		; [1]
+	out	x,27		side BLANK	[1]	; [2] get next loop counter N
+	out	pc,5		side BLANK_CLK	[1]	; [2] jump to next function
+
+; ===== [6 instructions] output pixels, N=number of pixels - 2 (number of pixels must be multiple of 8)
+
+public output:
+	out	pins,BPP	side IMG		; [1] output pixel
+	nop			side IMG	[1]	; [1]
+	jmp	x--,output	side IMG_CLK	[1]	; [2] loop
+	out	pins,BPP	side IMG		; [1] output pixel
+	out	x,27		side IMG	[1]	; [2] get next loop counter N
+	out	pc,5		side IMG_CLK	[1]	; [2] jump to next function

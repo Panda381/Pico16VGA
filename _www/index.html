@@ -1,0 +1,642 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=windows-1250">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title>Pico16VGA - 16-barevnı VGA displej na Raspberry Pico</title>
+</head>
+
+<body bgcolor="#FFFFFF" text="#000000">
+<div align="center"><center>
+
+<table border="0" width="100%">
+    <tr>
+        <td width="33%"><p align="left"><a href="../index.html"><font
+        face="Arial">&lt;&lt; Zpìt</font></a></p>
+        </td>
+        <td width="33%">&nbsp;</td>
+        <td width="34%"><p align="right"><font face="Arial">  <u>Èesky:</u>
+        <img src="img/cz2.gif" width="50" height="30">, </font><a
+        href="index_en.html"><font face="Arial">English: <img
+        src="img/en.gif" border="0" width="50" height="30"></font></a></p>
+        </td>
+    </tr>
+</table>
+</center></div>
+
+<p align="center"><font color="#FF8000" size="5" face="Arial"><strong>Pico16VGA</strong>
+<strong>- 16-barevnı VGA displej na Raspberry Pico<br>
+pro analogovı VGA monitor a digitální LCD panel</strong></font></p>
+
+<p align="center"><font face="Arial">verze 1.0, prosinec 2021</font></p>
+
+<p align="center"><font face="Arial">(c) Miroslav Nìmeèek</font></p>
+
+<p align="center"><a href="img/pico16vga_1.jpg"><img
+src="img/pico16vga_1m.jpg" border="0" width="450" height="324"></a></p>
+
+<p align="center"><a href="dwn/Pico16Vga.zip"><font face="Arial">Download
+knihovny Pico16VGA</font></a> </p>
+
+<p align="center"><font face="Arial">Pico16VGA na Github: </font><a
+href="https://github.com/Panda381/Pico16VGA"><font face="Arial">https://github.com/Panda381/Pico16VGA</font></a></p>
+
+<p><font face="Arial"><strong>Obsah</strong></font></p>
+
+<ul>
+    <li><a href="#hardware"><font face="Arial">Schéma zapojení</font></a></li>
+    <li><a href="#compile"><font face="Arial">Pøeklad knihovny</font></a></li>
+    <li><a href="#config"><font face="Arial">Konfigurace knihovny</font></a></li>
+    <li><a href="#usage"><font face="Arial">Pouití knihovny</font></a></li>
+    <li><a href="#support"><font face="Arial">Podpùrné funkce</font></a></li>
+    <li><a href="#demo"><font face="Arial">Ukázkové programy</font></a></li>
+</ul>
+
+<p><font face="Arial">Pico16VGA je minimalistická knihovna pro
+Raspberry Pico, generující VGA signál 640x480/16-barev pro
+analogovı monitor VGA nebo LCD panel s digitálním paralelním
+interfacem. Pico16VGA je zjednodušenou verzí plné verze
+knihovny </font><a
+href="http://www.breatharian.eu/hw/picovga/index.html"><font
+face="Arial">PicoVGA</font></a><font face="Arial">, se
+sníenım poètem vıstupních pinù. Je urèena pøedevším
+pro technické pouití.</font></p>
+
+<p><font face="Arial">Barvy generované knihovnou:</font></p>
+
+<p><font face="Arial"><img src="img/pal16_rgb.jpg" border="2"
+width="512" height="128"></font></p>
+
+<p><font face="Arial">Zobrazení na LCD panelu s digitálním
+paralelním interfacem:</font></p>
+
+<p><a href="img/pico16vga_2.jpg"><img src="img/pico16vga_2m.jpg"
+border="0" width="450" height="334"></a></p>
+
+<h2><a name="hardware"></a><font face="Arial">Schéma zapojení</font></h2>
+
+<p><font face="Arial">Vıstup barevného signálu zajišují 4
+vıstupní piny s vıznamem: modrá, zelená, èervená a jasová
+sloka. Knihovna podporuje 3 poøadí vıstupních pinù: RGB,
+BGR nebo GRB. Uvedenı pøíklad zapojení je uzpùsoben
+zapojení testovací desky Pimoroni Pico VGA, kterou lze pouít
+k základnímu vyzkoušení knihovny - na pøipojeném VGA
+monitoru bude vidìt obraz a z levého zvukového PWM kanálu
+bude slyšet zvuk, ovšem obraz bude jen jednobarevnı, zelenı.</font></p>
+
+<p><font face="Arial">Pøi vıstupu na analogovı VGA monitor
+jsou vıstupy pøipojeny pøes rezistory 330 ohmù. Jasová
+sloka je k vıstupním signálùm pøipojena pøes rezistory
+1k0 a zajišuje pøiètení základní jasové úrovnì ke
+všem barevnım slokám. Spolu se vstupní impedancí monitoru
+75 ohmù se zajistí potøebné vıstupní napìtí 0,7V.
+Vıstupní napìtí se mìní ve 4 stupních: 0% (0V), 24%
+(0,18V), 76% (0,56V) a 100% (0,74V). Synchronizaèní signály
+HSYNC a VSYNC jsou pøivedeny na VGA konektor pøes rezistory 100
+ohmù. Je moné zvolit reim synchronizaèní smìsi, kdy je
+aktivní pouze vıstup HSYNC (ve vıznamu signálu CSYNC), VSYNC
+není vyuit. Tento reim nìkteré starší VGA monitory
+nepodporují.</font></p>
+
+<p><font face="Arial">Knihovna podporuje digitální paralelní
+vıstup na LCD panel s rozhraním R6G6B6. Ve schématu je uveden
+pøíklad zapojení pro displej AT056TN53. Barevné vıstupy jsou
+pøivedeny na vyšší 2 bity barevnıch sloek (R5+R4, G5+G4,
+B5+B4). Jasovı vıstup ovládá niší 4 bity všech
+barevnıch sloek a tím zajistí ovládání zvıšeného jasu
+barev. Kromì barevnıch signálù jsou na displej pøivedeny
+synchronizaèní signály HSYNC a VSYNC, a také øídicí
+signál DE a hodinovı signál DCLK.</font></p>
+
+<p><font face="Arial">Digitální displej mùe pracovat buï v
+reimu HV, kdy se uplatní signály HSYNC a VSYNC, nebo v
+reimu DE, kdy se uplatòuje øídicí signál DE,
+zajišující øízení synchronizace. Kromì tìchto signálù
+je generován ještì hodinovı signál DCLK. Hodinovı signál
+má frekvenci 25,2 MHz. Nábìná hrana hodinového signálu
+probíhá uprostøed kadého pixelu a zajistí tak pøepis
+hodnoty pixelu do registrù displeje.</font></p>
+
+<p><font face="Arial">Vıstupní barevné signály mohou bıt
+umístìny na kterıchkoliv pinech modulu Raspberry Pico. Je
+nutno ovšem dodret podmínku, e GPIO musí tvoøit spojitou
+posloupnost. V konfiguraci knihovny lze zvolit poèáteèní GPIO
+pro první barevnı signál, ostatní 3 signály musí
+následovat na následujících GPIO. Knihovna pøímo neurèuje,
+která barva bude pøiøazena ke kterému pinu. V konfiguraci
+knihovny lze sice zvolit poøadí barev RGB, BGR nebo GRB, ale to
+pouze urèuje pøeddefinované konstanty jmen barev a èinnost
+funkce pro slouèení RGB sloek. To lze snadno zmìnit podle
+potøeby.</font></p>
+
+<p><font face="Arial">Pro øídicí signály HSYNC, VSYNC, DE a
+DCLK platí podobné podmínky jako pro barevné signály -
+signály lze umístit na kterékoliv GPIO, ale GPIO musí tvoøit
+spojitou posloupnost.</font></p>
+
+<p><font face="Arial">V konfiguraci knihovny lze zvolit 5
+reimù provozu, podle zpùsobu pøipojení displeje. To
+ovlivòuje, které øídicí signály budou pouity. Piny
+nepouitıch øídicích signálù lze vyuít k jinım
+úèelùm. Pøehled pouitıch øídicích signálù je uveden
+zde v tabulce:</font></p>
+
+<table border="2" cellpadding="3">
+    <tr>
+        <td align="center"><font face="Arial">mód</font></td>
+        <td><p align="center"><font face="Arial">urèen pro</font></p>
+        </td>
+        <td><p align="center"><font face="Arial">pouité
+        signály</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td align="center"><font face="Arial">0</font></td>
+        <td><font face="Arial">novı analogovı VGA monitor</font></td>
+        <td><font face="Arial">HSYNC</font></td>
+    </tr>
+    <tr>
+        <td align="center"><font face="Arial">1</font></td>
+        <td><font face="Arial">starı analogovı VGA monitor</font></td>
+        <td><font face="Arial">HSYNC, VSYNC</font></td>
+    </tr>
+    <tr>
+        <td align="center"><font face="Arial">2</font></td>
+        <td><font face="Arial">analogovı VGA monitor +
+        digitální LCD panel</font></td>
+        <td><font face="Arial">HSYNC, VSYNC, DCLK, DE</font></td>
+    </tr>
+    <tr>
+        <td align="center"><font face="Arial">3</font></td>
+        <td><font face="Arial">digitální LCD panel v HV módu</font></td>
+        <td><font face="Arial">HSYNC, VSYNC, DCLK</font></td>
+    </tr>
+    <tr>
+        <td align="center"><font face="Arial">4</font></td>
+        <td><font face="Arial">digitální LCD panel v DE módu</font></td>
+        <td><font face="Arial">DCLK, DE</font></td>
+    </tr>
+</table>
+
+<p><font face="Arial">Jako pomocnı signál je do digitálního
+displeje veden ještì signál LED, kterı pomocí PWM regulace
+(s frekvencí 300 Hz) øídí jas LED podsvícení displeje.
+Funkce je volitelná v konfiguraci.</font></p>
+
+<p><font face="Arial">Signál AUDIO je PWM zvukovı vıstup, za
+kterım by mìla následovat dolní propust k filtraci
+modulaèní sloky. Funkce je volitelná v konfiguraci.</font></p>
+
+<p><font face="Arial">K pinùm GPIO0 a GPIO1 lze pøipojit debug
+UART konzoli. Lze vyuít pøevodník pøevádìjící úrovnì
+3,3V na USB interface. UART konzole je vyuívána v nìkterıch
+ukázkovıch programech k ovládání klávesnicí. Mùe bıt
+té nahrazena USB interfacem, s vyuitím programovacího USB
+konektoru a konzolového programu (</font><a
+href="dwn/begPutty.zip"><font face="Arial">begPutty</font></a><font
+face="Arial">).</font></p>
+
+<p><font face="Arial"><img src="img/Pico16VGA_diagram.jpg"
+width="1024" height="478"></font></p>
+
+<p>&nbsp;</p>
+
+<h2><a name="compile"></a><font face="Arial">Pøeklad knihovny</font></h2>
+
+<p><font face="Arial">Knihovna je pøipravena k pøekladu v
+prostøedí Windows. K pøekladu vyaduje pouze instalaci
+pøekladaèe GCC-ARM (instalaèní soubor
+gcc-arm-none-eabi-10-2020 ). Nainstalujete-li pøekladaè do
+sloky <strong>C:\ARM10</strong>, staèí knihovnu rozbalit do
+pracovní sloky a spustit pøeklad. K pøekladu slouí
+povelové soubory <strong>c.bat</strong>. Soubory <strong>d.bat</strong>
+slouí k proèištìní od prozatimních pøekladovıch
+souborù. K odeslání pøeloeného programu na Pico slouí
+soubor <strong>e.bat</strong> - pro tento úèel se doporuèuje
+zvolit pro Pico disk <strong>R:</strong>.</font></p>
+
+<h2><a name="config"></a><font face="Arial">Konfigurace knihovny</font></h2>
+
+<p><font face="Arial">Konfiguraèní soubor knihovny naleznete ve
+sloce <strong>_vga</strong>, soubor <strong>config.h</strong>.
+Pro vìtšinu pouití postaèí základní konfiguraèní
+parametry, oznaèené &quot;base configuration&quot;.</font></p>
+
+<p><font face="Arial"><strong>VGA_MODE</strong> - urèuje mód
+provozu a pøipojenı typ displeje. Jednotlivé módy byly
+uvedeny v tabulce u </font><a href="#hardware"><font face="Arial">Schématu
+zapojení</font></a><font face="Arial">: 0=starı analogovı VGA
+monitor, 1=novı analogovı VGA monitor, 2=univerzální mód
+(analogovı VGA i digitální LCD), 3=digitální LCD panel v HV
+módu, 4=digitální LCD panel v DE módu. Pokud zmìníte
+vybranı mód displeje, je nutné ještì v souboru vga.pio
+odkomentovat pøíslušnou sekci pro definici side-set pinù.</font></p>
+
+<p><font face="Arial"><strong>VGA_SHIFTX</strong> -
+horizontální posun obrazu v rozsahu -12 a +12 pixelù.</font></p>
+
+<p><font face="Arial"><strong>VGA_SHIFTY</strong> - vertikální
+posun obrazu v rozsahu -9 a +9 linek.</font></p>
+
+<p><font face="Arial"><strong>COLOR_FORMAT</strong> - volba
+barevného formátu RGB, BGR nebo GRB. Parametr urèuje poøadí
+barev na vıstupních pinech. Parametr urèuje pouze
+pøeddefinované konstanty barev COL_* a funkci pro slouèení
+barev COLRGB. Parametr neovlivní poøadí barev v obrázcích -
+pøi jejich importu je nutné pouít pøíslušnı soubor s
+definicí palet ve slokách _vga\_exe a
+_vga_\exe_\Pico16VGA_pal.</font></p>
+
+<p><font face="Arial"><strong>VGA_GPIO_FIRST</strong> - první
+GPIO pin pro signály barev. Lze zvolit kterıkoliv GPIO pin, ale
+všechny pouité piny musí tvoøit spojitou posloupnost.</font></p>
+
+<p><font face="Arial">Následující 4 parametry definují GPIO s
+øídicími signály. Nepouité piny není tøeba konfigurovat.
+Pouité piny mohou bıt umístìny na kterékoliv GPIO, ale
+musí tvoøit spojitou posloupnost a jejich poøadí nelze
+zmìnit.</font></p>
+
+<p><font face="Arial"><strong>VGA_CTRL_HSYNC</strong> - GPIO pin
+se signálem HSYNC<br>
+<strong>VGA_CTRL_VSYNC</strong> - GPIO pin se signálem VSYNC<br>
+<strong>VGA_CTRL_DCLK</strong> - GPIO pin se signálem DCLK<br>
+<strong>VGA_CTRL_DE</strong> - GPIO pin se signálem DE.</font></p>
+
+<p><font face="Arial"><strong>USE_PWMLED</strong> - 1 povolí
+pouití PWM regulace LED podsvícení digitálního displeje.</font></p>
+
+<p><font face="Arial"><strong>PWMLED_GPIO</strong> - èíslo GPIO
+s PWM LED vıstupem.</font></p>
+
+<p><font face="Arial"><strong>USE_PWMSOUND</strong> - 1 povolí
+pouití PWM zvukového vıstupu.</font></p>
+
+<p><font face="Arial"><strong>PWMSND_GPIO</strong> - èíslo GPIO
+s PWM zvukovım vıstupem.</font></p>
+
+<h2><a name="usage"></a><font face="Arial">Pouití knihovny</font></h2>
+
+<p><font face="Arial">Sloka <strong>_boot2</strong> obsahuje 2.
+stupeò loaderu, kterı se pøipojuje k pøekládanım
+programùm.</font></p>
+
+<p><font face="Arial">Sloka <strong>_exe</strong> obsahuje
+program elf2uf2.exe, kterı zkonvertuje pøeloenı program z
+elf formátu do uf2 (formát potøebnı k zavedení do Pico).</font></p>
+
+<p><font face="Arial">Sloka <strong>_sdk</strong> obsahuje
+soubory SDK knihovny Pico.</font></p>
+
+<p><font face="Arial">Sloka <strong>_tinyusb</strong> obsahuje
+USB podporu, slouící napø. k vıstupu debug textù na USB
+konzoli.</font></p>
+
+<p><font face="Arial">Programy v <strong>_tools</strong> jsou
+pomocné programy pouívané bìhem pøekladu.</font></p>
+
+<p><font face="Arial">Ve sloce <strong>_vga</strong> je kód
+knihovny Pico16VGA. Ve sloce <strong>_vga\_exe</strong>
+naleznete pomocné programy knihovny - generátor palet pro
+import obrázkù (spolu s vygenerovanımi soubory palet),
+konvertor pro import obrázkù do programu, generátor pro
+nastavení PLL hodin a konvertor pro import zvukù do programu.</font></p>
+
+<p><font face="Arial">Dále ve slokách knihovny naleznete
+ukázkové programy, které nejlépe ozøejmí pouití
+knihovny. Program pøeloíte souborem <strong>c.bat</strong>,
+souborem <strong>e.bat</strong> program nahrajete do Pico a
+souborem <strong>d.bat</strong> sloku vyèistíte. Do souboru <strong>Makefile</strong>
+mùete doplnit pøípadné další pøekládané soubory do
+parametrù ASRC, CSRC a SRC.</font></p>
+
+<p><font face="Arial">V souboru Makefile naleznete té
+parametry &quot;stdio output&quot; urèující vıstup na debug
+konzoli. Mùete zvolit buï vıstup na UART (napø. pøes UART
+adaptér) nebo vıstup na USB programovací konektor (virtuální
+COM port). Pøes konzoli mùete ovládat program pomocí
+klávesnice. Pouijete-li konzoli, doplòte na zaèátek main()
+funkce pøíkaz <strong>stdio_init_all()</strong> pro
+inicializaci konzolového vıstupu.</font></p>
+
+<p><font face="Arial">Knihovna obsahuje obrazovı buffer <strong>FrameBuf</strong>
+o velikosti FRAMESIZE (= 153600 bajtù), kterı je knihovnou
+zobrazován. Obraz má rozmìr WIDTH = 640 a HEIGHT = 480.
+Kadı pixel je v bufferu zastoupen 4 bity dat. V kadém bajtu
+obrazového bufferu jsou 2 pixely. Vyšší 4 bity bit4..bit7
+obsahují první pixel (sudı), niší 4 bity b0..b3 obsahují
+druhı pixel (lichı). Kromì pøímého pøístupu mùete k
+pøístupu do obrazového bufferu pouít funkce grafické
+knihovny <strong>draw.cpp</strong>.</font></p>
+
+<p><font face="Arial">Obsluha zobrazení probíhá v druhém
+jádru procesoru. Pro správné zobrazení je nutné, aby druhé
+jádro procesoru nebylo zatíeno funkcemi pro pøerušení.
+Obsluhy pøerušení proto umísujte do hlavního, prvního
+jádra procesoru. Budete-li chtít vyuívat pro program i
+druhé jádro procesoru, slouí k tomu funkce <strong>Core1Exec</strong>
+(viz _vga\vga.h). Pøíklad pouití druhého jádra naleznete v
+ukázkovém programu Mandelbrot.</font></p>
+
+<h2><a name="support"></a><font face="Arial">Podpùrné funkce</font></h2>
+
+<p><font face="Arial">Kromì hlavního jádra obsahuje Pico16VGA
+knihovna i další podpùrné funkce. Pøípadné programy a
+utility jsou ve Windows EXE formátu.</font></p>
+
+<p><font face="Arial"><strong>draw</strong> - je knihovna pro
+kreslení do obrazového bufferu. Knihovna obsahuje funkce pro
+kreslení obdélníku, rámu, kruhu, krunice, textù a
+obrázkù. Knihovna obsahuje podporu pro kreslení do bufferu na
+pozadí, co umoòuje kreslení na obrazovku bez
+problikávání grafiky. Hlavní obrazovı buffer FrameBuf
+zabírá 153 KB pamìti RAM a nezbylo by dostatek místa pro
+druhı vykreslovací buffer. To je v knihovnì vyøešeno
+pouíváním vykreslovacích pásù. V programu se rezervuje
+vykreslovací buffer o velikosti napø. poloviny hlavního
+obrazového bufferu FRAMESIZE/2 (= 76800 bajtù), kterı u se
+do 264 KB pamìti RAM vejde. Ukazatel pDrawBuf se nastaví na
+adresu vykreslovacího bufferu, DrawBufH bude obsahovat vıšku
+vykreslovacího bufferu (zde HEIGHT/2 = 240). Vykreslení na
+obrazovku se poté provede ve dvou krocích - poèátek bufferu
+DrawBufY se nastaví na 0, provede se vykreslení celého obrazu
+pomocí vykreslovacích funkcí a funkcí DrawBufUpdate() se
+obsah vykreslovacího bufferu pøenese do hlavního obrazového
+bufferu. Ukazatel DrawBufY se posune na souøadnici HEIGHT/2 a
+opìt se provede vykresleního stejného celého obrazu.
+Vykreslovací funkce oøeou vykreslovanı obsah. Tímto
+zpùsobem lze vykreslovat obraz bez blikání postupnì, po
+jednotlivıch pásech. Metoda je pouita v ukázkovém programu
+Balloons.</font></p>
+
+<p><font face="Arial"><strong>pwmled</strong> - øízení jasu
+PWM LED podsvícení digitálního displeje.</font></p>
+
+<p><font face="Arial"><strong>pwmsnd</strong> - zvukovı vıstup.
+Knihovna aktivuje PWM generátor na pøíslušném vıstupním
+pinu. K pinu lze (pøes RC filtr) pøipojit sluchátka nebo
+externí zesilovaè. Zvukovı soubor má formát PCM 22050 Hz,
+mono, 8 bitù unsigned. Je moné jak jednorázové pøehrátí
+zvuku, tak i opakované pøehrávání s promìnlivou rychlostí.</font></p>
+
+<p><font face="Arial"><strong>rand</strong> - generátor
+náhodného èísla. Knihovna generuje náhodná èísla s
+32-bitovım seed, s rùznou velikostí vıstupních dat a ve
+volitelnıch rozsazích.</font></p>
+
+<h2><a name="demo"></a><font face="Arial">Ukázkové programy</font></h2>
+
+<p><font face="Arial">Programy jsou pøipravené pro ovládání
+klávesnicí pøes konzoli PC. Jako konzoli lze pouít program </font><a
+href="dwn/begPutty.zip"><font face="Arial">begPutty</font></a><font
+face="Arial"> a virtuální sériovı USB port. Nìkteré
+programy pouívají zvuk - generování PWM zvuku pøes pin
+GP28 (program oznaèen poznámkou &quot;(zvuk)&quot;).</font></p>
+<div align="left">
+
+<table border="0" cellpadding="2">
+    <tr>
+        <td align="right" width="260"><a href="img/analyzer.jpg"><font
+        face="Arial"><img src="img/analyzer_m.jpg" border="0"
+        width="250" height="188"></font></a></td>
+        <td valign="top"><font face="Arial"><strong>Analyzer</strong>
+        - jednoduchı jednokanálovı logickı analyzátor se
+        vzorkovacím kmitoètem 126 MHz (vstup GPIO15, Pico pin
+        20). Obsahuje té generátor náhodného šumu (jako
+        testovací vzorek, vıstup GPIO14, Pico pin 19),
+        nastavitelnı a do vzorkovacího kmitoètu 126 MHz (v
+        pøíkladu nastaveno na 15,75 MHz).</font></td>
+    </tr>
+    <tr>
+        <td align="right" width="260"><a href="img/balloons.jpg"><font
+        face="Arial"><img src="img/balloons_m.jpg" border="0"
+        width="250" height="188"></font></a></td>
+        <td valign="top"><font face="Arial"><strong>Balloons</strong>
+        - demonstrace kreslení do back bufferu, poletující
+        balonky.</font></td>
+    </tr>
+    <tr>
+        <td align="right" width="260"><a href="img/draw.jpg"><font
+        face="Arial"><img src="img/draw_m.jpg" border="0"
+        width="250" height="188"></font></a></td>
+        <td valign="top"><font face="Arial"><strong>Draw</strong>
+        - demonstrace kreslení grafickıch prvkù. Pro ukázku
+        se støídá pomalé vykreslování a kreslení
+        maximální rychlostí.</font></td>
+    </tr>
+    <tr>
+        <td align="right" width="260"><a href="img/earth.jpg"><font
+        face="Arial"><img src="img/earth_m.jpg" border="0"
+        width="250" height="188"></font></a></td>
+        <td valign="top"><font face="Arial"><strong>Earth</strong>
+        - rotující zemìkoule. Softwarová sférická
+        transformace obrázku.</font></td>
+    </tr>
+    <tr>
+        <td align="right" width="260"><a href="img/eggs.jpg"><font
+        face="Arial"><img src="img/eggs_m.jpg" border="0"
+        width="250" height="188"></font></a></td>
+        <td valign="top"><font face="Arial"><strong>Eggs</strong>
+        - logická hra (zvuk). Vychází ze hry Reversi. Cílem
+        je získat co nejvíce vlastních kamenù. Jeden hráè
+        mìní kameny ve smìru slepice-kuøe-vejce, druhı
+        hráè opaènım smìrem. Ovládání: L vpravo, I
+        nahoru, J vlevo, K dolù, H pomoc, Q konec, P 2 hráèi,
+        D demo, mezerník poloení kamene, Enter ok. Lze hrát
+        proti jinému hráèi i proti poèítaèi.</font></td>
+    </tr>
+    <tr>
+        <td align="right" width="260"><a href="img/fifteen.jpg"><font
+        face="Arial"><img src="img/fifteen_m.jpg" border="0"
+        width="250" height="188"></font></a></td>
+        <td valign="top"><font face="Arial"><strong>Fifteen</strong>
+        - logická hra (zvuk). Cílem je seøadit kameny v
+        poøadí 1 a 15. Ovládání: L vpravo, I nahoru, J
+        vlevo, K dolù, Q nová hra.</font></td>
+    </tr>
+    <tr>
+        <td align="right" width="260"><a href="img/flag.jpg"><font
+        face="Arial"><img src="img/flag_m.jpg" border="0"
+        width="250" height="188"></font></a></td>
+        <td valign="top"><font face="Arial"><strong>Flag</strong>
+        - vlající vlajka.</font></td>
+    </tr>
+    <tr>
+        <td align="right" width="260"><a href="img/freqmeter.jpg"><font
+        face="Arial"><img src="img/freqmeter_m.jpg" border="0"
+        width="250" height="188"></font></a></td>
+        <td valign="top"><font face="Arial"><strong>Frequency
+        Meter</strong> - mìøiè frekvence a periody
+        digitálního signálu s pøesností 4 èíslice, v
+        rozsahu 2,5 Hz a 63 MHz, se zobrazením vzorku
+        prùbìhu signálu. Vstup GPIO15, Pico pin 20. Mìøiè
+        automaticky kombinuje dvì metody mìøení - mìøení
+        frekvence a mìøení periody signálu.</font></td>
+    </tr>
+    <tr>
+        <td align="right" width="260"><a href="img/hello.jpg"><font
+        face="Arial"><img src="img/hello_m.jpg" border="0"
+        width="250" height="188"></font></a></td>
+        <td valign="top"><font face="Arial"><strong>Hello World</strong>
+        - nejjednodušší ukázkovı pøíklad pouití
+        knihovny Pico16VGA.</font></td>
+    </tr>
+    <tr>
+        <td align="right" width="260"><a href="img/life.jpg"><font
+        face="Arial"><img src="img/life_m.jpg" border="0"
+        width="250" height="188"></font></a></td>
+        <td valign="top"><font face="Arial"><strong>Life</strong>
+        - simulátor ivota bunìk (celulární automat). Buòky
+        se v kadém kroku mìní podle poètu sousedních
+        bunìk: pro 1 a ménì buòka zaniká na osamocení, pro
+        4 a více buòka zaniká na pøemnoení, pro 3 vznikne
+        nová buòka, pro 2 není zmìna. Ve høe se lze
+        pøepínat mezi 10 obrazovkami (sloty) a pøenášet
+        obraz mezi nimi pomocí schránky. V kadém slotu je
+        pøedpøipravena definice populárních kombinací.
+        Ovládání: L vpravo, I nahoru, J vlevo, K dolù, C
+        kopie do schránky, V vloení ze schránky, D
+        vymazání plochy, mezerník zmìna buòky, Enter
+        start/stop automatu, 0-9 vıbìr slotu.</font></td>
+    </tr>
+    <tr>
+        <td align="right" width="260"><a href="img/lines.jpg"><font
+        face="Arial"><img src="img/lines_m.jpg" border="0"
+        width="250" height="188"></font></a></td>
+        <td valign="top"><font face="Arial"><strong>Lines</strong>
+        - generátor èárovıch relaxaèních obrazcù.</font></td>
+    </tr>
+    <tr>
+        <td align="right" width="260"><a
+        href="img/mandelbrot.jpg"><font face="Arial"><img
+        src="img/mandelbrot_m.jpg" border="0" width="250"
+        height="188"></font></a></td>
+        <td valign="top"><font face="Arial"><strong>Mandelbrot</strong>
+        - generátor fraktálovıch obrazcù Mandelbrotovy
+        mnoiny. Ke generování je pouita integer matematika
+        a díky tomu je pøekreslení obrazce rychlé. Je však
+        nutno poèítat s tím, e pøi zvìtšování
+        mìøítka zobrazení je potøebná rostoucí pøesnost
+        poètu èíslic. Pouitá integer a float matematika
+        vystaèí do mìøítka zvìtšení 10^5, double
+        matematika do mìøítka 10^10. Pøi dalším
+        zvìtšování se namísto obrazce zobrazí u jen
+        barevné èáry. Ovládání: E nahoru, S vlevo, D
+        vpravo, X dolù, Q zvìtšení mìøítka, A zmenšení
+        mìøítka, I pøepnutí na celoèíselnou matematiku
+        (nejrychlejší, dosah do 10^-5), F pøepnutí na float
+        matematiku (pomalejší, dosah do 10^-5), B pøepnutí na
+        double matematiku (pomalá, dosah do 10^-10), O
+        sníení poètu krokù iterací, P zvıšení poètu
+        krokù iterací, mezera pøekreslení obrazovky.</font></td>
+    </tr>
+    <tr>
+        <td align="right" width="260"><a
+        href="img/matrixrain.jpg"><font face="Arial"><img
+        src="img/matrixrain_m.jpg" border="0" width="250"
+        height="188"></font></a></td>
+        <td valign="top"><font face="Arial"><strong>Matrix Rain</strong>
+        - simulace &quot;matrixového kódového deštì&quot;.</font></td>
+    </tr>
+    <tr>
+        <td align="right" width="260"><a href="img/maze.jpg"><font
+        face="Arial"><img src="img/maze_m.jpg" border="0"
+        width="250" height="188"></font></a></td>
+        <td valign="top"><font face="Arial"><strong>Maze</strong>
+        - cílem je najít cestu z bludištì. Bludištì jsou
+        generována náhodnì programovì. Ovládání: J vlevo,
+        I nahoru, L vpravo, K dolù, H pomoc (ukázání
+        dveøí).</font></td>
+    </tr>
+    <tr>
+        <td align="right" width="260"><a href="img/monoscope.jpg"><font
+        face="Arial"><img src="img/monoscope_m.jpg" border="0"
+        width="250" height="188"></font></a></td>
+        <td valign="top"><font face="Arial"><strong>Monoscope</strong>
+        - test displeje, zobrazí monoskop.</font></td>
+    </tr>
+    <tr>
+        <td align="right" width="260"><a href="img/pi.jpg"><font
+        face="Arial"><img src="img/pi_m.jpg" border="0"
+        width="250" height="188"></font></a></td>
+        <td valign="top"><font face="Arial"><strong>Pi</strong> -
+        vıpoèet èísla Pi na 4780 èíslic. Po vıpoètu je
+        vısledek zkontrolován s oèekávanım vzorkem.</font></td>
+    </tr>
+    <tr>
+        <td align="right" width="260"><a href="img/pixels.jpg"><font
+        face="Arial"><img src="img/pixels_m.jpg" border="0"
+        width="250" height="188"></font></a></td>
+        <td valign="top"><font face="Arial"><strong>Pixels</strong>
+        - náhodné generování barevnıch pixelù.</font></td>
+    </tr>
+    <tr>
+        <td align="right" width="260"><a href="img/raytrace.jpg"><font
+        face="Arial"><img src="img/raytrace_m.jpg" border="0"
+        width="250" height="188"></font></a></td>
+        <td valign="top"><font face="Arial"><strong>Raytrace</strong>
+        - generování 3D obrazce metodou ray tracing. Vzhledem k
+        omezené barevné hloubce Pico16VGA je pøi zobrazení
+        pouit rastrovı dithering (&quot;zrnitost&quot;
+        obrázku).</font></td>
+    </tr>
+    <tr>
+        <td align="right" width="260"><a href="img/rgbtest.jpg"><font
+        face="Arial"><img src="img/rgbtest_m.jpg" border="0"
+        width="250" height="188"></font></a></td>
+        <td valign="top"><font face="Arial"><strong>RGBtest</strong>
+        - test barev.</font></td>
+    </tr>
+    <tr>
+        <td align="right" width="260"><a href="img/spheres.jpg"><font
+        face="Arial"><img src="img/spheres_m.jpg" border="0"
+        width="250" height="188"></font></a></td>
+        <td valign="top"><font face="Arial"><strong>Spheres</strong>
+        - náhodné generování koulí.</font></td>
+    </tr>
+    <tr>
+        <td align="right" width="260"><a href="img/spots.jpg"><font
+        face="Arial"><img src="img/spots_m.jpg" border="0"
+        width="250" height="188"></font></a></td>
+        <td valign="top"><font face="Arial"><strong>Spots</strong>
+        - náhodné generování skvrn.</font></td>
+    </tr>
+    <tr>
+        <td align="right" width="260"><a href="img/twister.jpg"><font
+        face="Arial"><img src="img/twister_m.jpg" border="0"
+        width="250" height="188"></font></a></td>
+        <td valign="top"><font face="Arial"><strong>Twister</strong>
+        - zkroucení texturovaného kvádru. Slouí jako
+        ukázka programové deformace obrázku.</font></td>
+    </tr>
+    <tr>
+        <td align="right" width="260"><a
+        href="img/watersurface.jpg"><font face="Arial"><img
+        src="img/watersurface_m.jpg" border="0" width="250"
+        height="188"></font></a></td>
+        <td valign="top"><font face="Arial"><strong>Water Surface</strong>
+        - simulace vlnící se vodní hladiny (zvuk).</font></td>
+    </tr>
+</table>
+</div>
+
+<p align="center"><a href="dwn/Pico16Vga.zip"><font face="Arial">Download
+knihovny Pico16VGA</font></a></p>
+
+<p align="right"><font face="Arial">Autor: Miroslav Nìmeèek, </font><a
+href="http://panda38.sweb.cz"><font face="Arial">http://panda38.sweb.cz</font></a></p>
+<div align="center"><center>
+
+<table border="0" width="100%">
+    <tr>
+        <td width="33%"><p align="left"><a href="../index.html"><font
+        face="Arial">&lt;&lt; Zpìt</font></a></p>
+        </td>
+        <td width="33%">&nbsp;</td>
+        <td width="34%">&nbsp;</td>
+    </tr>
+</table>
+</center></div>
+</body>
+</html>
